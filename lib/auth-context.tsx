@@ -30,6 +30,13 @@ const USERS: Record<string, User & { password: string }> = {
     name: "Regular User",
     role: "editor",
   },
+  viewer: {
+    id: "viewer-id",
+    username: "viewer",
+    password: "2025DEVChallenge",
+    name: "Viewer User",
+    role: "viewer",
+  },
 }
 
 interface AuthContextType {

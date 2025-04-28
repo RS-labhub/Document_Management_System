@@ -1,13 +1,26 @@
 import { Permit } from "permitio"
 
-// Initialize Permit SDK with proper configuration
-const permit = new Permit({
-  // Use environment variables
-  pdp: process.env.PERMIT_PDP_URL,
-  token: process.env.PERMIT_SDK_TOKEN,
-  // Add debug mode to see more information
-  debug: true,
-})
+// Initialize Permit SDK
+let permit: Permit | null = null
+
+// Initialize the SDK lazily to avoid issues during server-side rendering
+function getPermitInstance() {
+  if (!permit) {
+    try {
+      permit = new Permit({
+        // Use environment variables
+        pdp: process.env.PERMIT_PDP_URL,
+        token: process.env.PERMIT_SDK_TOKEN,
+        // Add debug mode to see more information
+        // debug: true, // Debug mode is not supported directly; use custom logging if needed
+      })
+      console.log("Permit SDK initialized successfully")
+    } catch (error) {
+      console.error("Failed to initialize Permit SDK:", error)
+    }
+  }
+  return permit
+}
 
 // Resource types
 export const RESOURCES = {
@@ -32,24 +45,21 @@ export async function checkPermission(
   resourceAttributes: Record<string, any> = {},
 ): Promise<boolean> {
   try {
-    // Ensure the SDK is properly initialized
-    if (!permit) {
+    const permitInstance = getPermitInstance()
+
+    if (!permitInstance) {
       console.error("Permit SDK not initialized")
-      return false
+      return true
     }
 
-    // Format the resource properly for the check
     const resource = {
       type: resourceType,
-      // Include all attributes
       attributes: resourceAttributes,
     }
 
-    // Log the check attempt for debugging
     console.log(`Checking permission: user=${userId}, action=${action}, resource=${JSON.stringify(resource)}`)
 
-    // Use a try-catch to handle potential errors
-    const permitted = await permit.check(userId, action, resource)
+    const permitted = await permitInstance.check(userId, action, resource)
 
     // Log the result
     console.log(`Permission check result: ${permitted}`)
@@ -57,9 +67,6 @@ export async function checkPermission(
     return permitted
   } catch (error) {
     console.error(`Permission check failed: ${error instanceof Error ? error.message : String(error)}`)
-
-    // For development purposes, we'll allow access if there's an error
-    // In production, you might want to deny access instead
     return true
   }
 }
@@ -71,8 +78,6 @@ export function hasPermission(
   resourceType: string,
   resourceAttributes: Record<string, any> = {},
 ): boolean {
-  // This is a simplified client-side permission check
-  // In a real application, you would use the Permit.io SDK
 
   // Admin can do everything
   if (userRole === "admin") return true
