@@ -1,3 +1,5 @@
+![icon](public/logo.png)
+
 # Document Management System with Fine-Grained Authorization
 
 This project demonstrates how to implement fine-grained authorization in a Next.js application using Permit.io. It's a document management system where users can create, view, edit, and delete documents based on their roles and document ownership.
@@ -24,27 +26,27 @@ Additionally, document owners have full control over their own documents regardl
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 18+
 - Permit.io account
 
 ### Installation
 
 1. Clone the repository
 2. Install dependencies:
-   \`\`\`bash
-   npm install
-   \`\`\`
+   ```bash
+   npm install or yarn install or bun install
+   ```
 3. Set up environment variables:
-   \`\`\`
+   ```
    PERMIT_PDP_URL=your-permit-pdp-url
    PERMIT_SDK_TOKEN=your-permit-sdk-token
-   \`\`\`
+   ```
 
 ### Running the Application
 
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 The application will be available at http://localhost:3000.
 
@@ -61,50 +63,50 @@ The application will be available at http://localhost:3000.
 
 ### 1. Install the Permit CLI
 
-\`\`\`bash
+```bash
 npm install -g @permitio/permit-cli
-\`\`\`
+```
 
 ### 2. Login to Permit.io
 
-\`\`\`bash
+```bash
 permit login
-\`\`\`
+```
 
 ### 3. Initialize a New Project
 
-\`\`\`bash
+```bash
 permit init
-\`\`\`
+```
 
 ### 4. Define Your Resources
 
-\`\`\`bash
+```bash
 permit resource create document
 permit resource create admin_panel
-\`\`\`
+```
 
 ### 5. Define Actions
 
-\`\`\`bash
+```bash
 permit action create create --resource document
 permit action create read --resource document
 permit action create update --resource document
 permit action create delete --resource document
 permit action create access --resource admin_panel
-\`\`\`
+```
 
 ### 6. Define Roles
 
-\`\`\`bash
+```bash
 permit role create admin
 permit role create editor
 permit role create viewer
-\`\`\`
+```
 
 ### 7. Define Permissions
 
-\`\`\`bash
+```bash
 # Admin permissions
 permit permission create --role admin --action create --resource document
 permit permission create --role admin --action read --resource document
@@ -119,24 +121,24 @@ permit permission create --role editor --action update --resource document
 
 # Viewer permissions
 permit permission create --role viewer --action read --resource document
-\`\`\`
+```
 
 ### 8. Define Resource Attributes
 
-\`\`\`bash
+```bash
 permit resource-attribute create ownerId --resource document --type string
 permit resource-attribute create isPublic --resource document --type boolean
-\`\`\`
+```
 
 ### 9. Define Resource Relations
 
-\`\`\`bash
+```bash
 permit resource-relation create owner --resource document --relation-type single --subject-set user
-\`\`\`
+```
 
 ### 10. Define Condition Sets
 
-\`\`\`bash
+```bash
 # Document owner can do anything with their document
 permit condition-set create document-owner --resource document --conditions "resource.ownerId == user.key"
 
@@ -145,7 +147,7 @@ permit permission create --condition-set document-owner --action create --resour
 permit permission create --condition-set document-owner --action read --resource document
 permit permission create --condition-set document-owner --action update --resource document
 permit permission create --condition-set document-owner --action delete --resource document
-\`\`\`
+```
 
 ## Implementation Details
 
@@ -153,7 +155,7 @@ permit permission create --condition-set document-owner --action delete --resour
 
 The application integrates with Permit.io through the `permit.ts` file, which provides functions for checking permissions:
 
-\`\`\`typescript
+```typescript
 import { Permit } from 'permitio'
 
 // Initialize Permit SDK
@@ -180,13 +182,13 @@ export async function checkPermission(
     return false
   }
 }
-\`\`\`
+```
 
 ### Server-Side Authorization
 
 Server actions use the Permit.io SDK to check permissions before performing operations:
 
-\`\`\`typescript
+```ts
 export async function createDocument(data: { title: string; content: string; isPublic: boolean }, userId: string) {
   // Check if user has permission to create documents
   const hasPermission = await checkPermission(
@@ -201,13 +203,13 @@ export async function createDocument(data: { title: string; content: string; isP
   
   // Create document...
 }
-\`\`\`
+```
 
 ### Client-Side Authorization
 
 The UI uses a simplified client-side permission check to determine what actions to show:
 
-\`\`\`typescript
+```ts
 const canUpdateDocument = hasPermission(
   user.role,
   ACTIONS.UPDATE,
@@ -221,7 +223,7 @@ const canUpdateDocument = hasPermission(
     Edit
   </Button>
 )}
-\`\`\`
+```
 
 ## Benefits of Externalized Authorization
 
