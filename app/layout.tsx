@@ -11,7 +11,9 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "Document Management System",
   description: "A document management system with fine-grained authorization using Permit.io",
-    generator: 'v0.dev'
+  icons: {
+    icon: "/favicon.png",
+  },
 }
 
 export default function RootLayout({
@@ -29,7 +31,7 @@ export default function RootLayout({
               <main className="flex-1 container mx-auto py-6 px-4">{children}</main>
               <footer className="border-t py-4">
                 <div className="container mx-auto text-center text-sm text-muted-foreground">
-                  Document Management System with Permit.io Authorization © {new Date().getFullYear()}
+                  Document Management System with <a href="https://app.permit.io/" className="text-blue-600 underline" >Permit.io</a> Authorization © {new Date().getFullYear()}
                 </div>
               </footer>
             </div>

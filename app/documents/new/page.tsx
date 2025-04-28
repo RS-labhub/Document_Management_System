@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
@@ -14,7 +12,6 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { hasPermission, RESOURCES, ACTIONS } from "@/lib/permit"
 
 export default function NewDocumentPage() {
   const [title, setTitle] = useState("")
@@ -25,30 +22,45 @@ export default function NewDocumentPage() {
   const router = useRouter()
   const { toast } = useToast()
 
-  if (!user) {
-    router.push("/login")
-    return null
-  }
-
-  const canCreateDocument = hasPermission(user.role, ACTIONS.CREATE, RESOURCES.DOCUMENT, { userId: user.id })
-
-  if (!canCreateDocument) {
-    router.push("/documents")
-    return null
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Basic form submission handler
+  const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Basic validation
+    if (!title.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Title is required",
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
-      await createDocument({ title, content, isPublic }, user.id)
+      // Call the server action directly
+      await createDocument(
+        {
+          title: title.trim(),
+          content: content.trim(),
+          isPublic,
+        },
+        user?.id || "",
+      )
+
+      // Show success message
       toast({
-        title: "Document created",
-        description: "Your document has been created successfully",
+        title: "Success",
+        description: "Document created successfully",
       })
+
+      // Navigate to documents page
       router.push("/documents")
     } catch (error) {
+      console.error("Error creating document:", error)
+
+      // Show error message
       toast({
         variant: "destructive",
         title: "Error",
@@ -57,6 +69,40 @@ export default function NewDocumentPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // If user is not logged in, show a message
+  if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Not Authorized</CardTitle>
+            <CardDescription>You need to be logged in to create documents</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={() => router.push("/login")}>Go to Login</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+
+  // If user doesn't have permission, show a message
+  if (user.role !== "admin" && user.role !== "editor") {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Not Authorized</CardTitle>
+            <CardDescription>You don't have permission to create documents</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={() => router.push("/documents")}>Back to Documents</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -74,7 +120,6 @@ export default function NewDocumentPage() {
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                required
                 placeholder="Enter document title"
               />
             </div>
@@ -84,7 +129,6 @@ export default function NewDocumentPage() {
                 id="content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                required
                 placeholder="Enter document content"
                 className="min-h-[200px]"
               />

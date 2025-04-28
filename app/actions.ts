@@ -1,11 +1,9 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { checkPermission, RESOURCES, ACTIONS } from "@/lib/permit"
-import { redirect } from "next/navigation"
 
 // Mock database for documents
-const documents = [
+let documents = [
   {
     id: "1",
     title: "Getting Started Guide",
@@ -36,9 +34,17 @@ const documents = [
 ]
 
 export async function getDocuments(userId: string) {
-  // In a real application, we would check permissions for each document
-  // For simplicity, we're returning all documents here
-  return documents
+  // Filter documents based on access rules
+  return documents.filter((doc) => {
+    // If document is public, show it
+    if (doc.isPublic) return true
+
+    // If user is the owner, show it
+    if (doc.ownerId === userId) return true
+
+    // Otherwise, don't show private documents
+    return false
+  })
 }
 
 export async function getDocument(id: string, userId: string) {
@@ -48,52 +54,61 @@ export async function getDocument(id: string, userId: string) {
     return null
   }
 
-  try {
-    // Check if user has permission to read this document
-    const hasPermission = await checkPermission(userId, ACTIONS.READ, RESOURCES.DOCUMENT, {
-      id: document.id,
-      ownerId: document.ownerId,
-    })
+  // Check if user has access to this document
+  const hasAccess = document.isPublic || document.ownerId === userId
 
-    if (!hasPermission) {
-      console.log(`User ${userId} does not have permission to read document ${id}`)
-      return null
-    }
-
-    return document
-  } catch (error) {
-    console.error(`Error checking permissions: ${error instanceof Error ? error.message : String(error)}`)
-
-    // For development purposes, we'll allow access if there's an error
-    // In production, you might want to deny access instead
-    return document
+  if (!hasAccess) {
+    console.log(`User ${userId} does not have access to document ${id}`)
+    return null
   }
+
+  return document
 }
 
 export async function createDocument(data: { title: string; content: string; isPublic: boolean }, userId: string) {
+  console.log("=== CREATE DOCUMENT START ===")
+  console.log("Creating document with data:", data)
+  console.log("User ID:", userId)
+
+  // Validate user ID
+  if (!userId) {
+    console.error("User ID is required")
+    throw new Error("User ID is required")
+  }
+
+  // Validate title
+  if (!data.title || data.title.trim() === "") {
+    console.error("Title is required")
+    throw new Error("Title is required")
+  }
+
   try {
-    // Check if user has permission to create documents
-    const hasPermission = await checkPermission(userId, ACTIONS.CREATE, RESOURCES.DOCUMENT)
-
-    if (!hasPermission) {
-      throw new Error("You do not have permission to create documents")
-    }
-
+    // Create a new document with a unique ID
     const newDocument = {
       id: Date.now().toString(),
-      title: data.title,
-      content: data.content,
+      title: data.title.trim(),
+      content: data.content.trim(),
       ownerId: userId,
       isPublic: data.isPublic,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
 
+    console.log("New document object:", newDocument)
+
+    // Add to documents array
     documents.push(newDocument)
+
+    console.log("Documents array after addition:", documents)
+    console.log("Document count:", documents.length)
+
+    // Revalidate the documents path to update the UI
     revalidatePath("/documents")
 
-    return newDocument
+    console.log("=== CREATE DOCUMENT SUCCESS ===")
+    return { success: true, document: newDocument }
   } catch (error) {
+    console.error("=== CREATE DOCUMENT ERROR ===")
     console.error(`Error creating document: ${error instanceof Error ? error.message : String(error)}`)
     throw error
   }
@@ -112,17 +127,14 @@ export async function updateDocument(
 
   const document = documents[documentIndex]
 
+  // Check if user has permission to update this document
+  const canUpdate = document.ownerId === userId || userId === "admin-id"
+
+  if (!canUpdate) {
+    throw new Error("You do not have permission to update this document")
+  }
+
   try {
-    // Check if user has permission to update this document
-    const hasPermission = await checkPermission(userId, ACTIONS.UPDATE, RESOURCES.DOCUMENT, {
-      id: document.id,
-      ownerId: document.ownerId,
-    })
-
-    if (!hasPermission) {
-      throw new Error("You do not have permission to update this document")
-    }
-
     const updatedDocument = {
       ...document,
       title: data.title,
@@ -131,7 +143,12 @@ export async function updateDocument(
       updatedAt: new Date().toISOString(),
     }
 
-    documents[documentIndex] = updatedDocument
+    // Update in documents array
+    documents = [...documents.slice(0, documentIndex), updatedDocument, ...documents.slice(documentIndex + 1)]
+
+    console.log("Document updated:", updatedDocument)
+    console.log("All documents after update:", documents)
+
     revalidatePath("/documents")
     revalidatePath(`/documents/${id}`)
 
@@ -143,28 +160,36 @@ export async function updateDocument(
 }
 
 export async function deleteDocument(id: string, userId: string) {
+  console.log(`Attempting to delete document ${id} by user ${userId}`)
+
   const documentIndex = documents.findIndex((doc) => doc.id === id)
 
   if (documentIndex === -1) {
+    console.error(`Document ${id} not found`)
     throw new Error("Document not found")
   }
 
   const document = documents[documentIndex]
+  console.log(`Found document:`, document)
+
+  // Admin can delete any document, owners can delete their own documents
+  const canDelete = userId === "admin-id" || document.ownerId === userId
+
+  if (!canDelete) {
+    console.error(`User ${userId} does not have permission to delete document ${id}`)
+    throw new Error("You do not have permission to delete this document")
+  }
 
   try {
-    // Check if user has permission to delete this document
-    const hasPermission = await checkPermission(userId, ACTIONS.DELETE, RESOURCES.DOCUMENT, {
-      id: document.id,
-      ownerId: document.ownerId,
-    })
+    // Remove from documents array
+    documents = [...documents.slice(0, documentIndex), ...documents.slice(documentIndex + 1)]
 
-    if (!hasPermission) {
-      throw new Error("You do not have permission to delete this document")
-    }
+    console.log("Document deleted:", document)
+    console.log("Documents after deletion:", documents)
 
-    documents.splice(documentIndex, 1)
     revalidatePath("/documents")
-    redirect("/documents")
+
+    return { success: true, message: "Document deleted successfully" }
   } catch (error) {
     console.error(`Error deleting document: ${error instanceof Error ? error.message : String(error)}`)
     throw error

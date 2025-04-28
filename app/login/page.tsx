@@ -77,10 +77,17 @@ export default function LoginPage() {
                 placeholder="Enter your password"
               />
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground space-y-1">
               <p>Demo credentials:</p>
-              <p>Admin: username: admin, password: 2025DEVChallenge</p>
-              <p>User: username: newuser, password: 2025DEVChallenge</p>
+              <p>
+                Admin: username: <strong>admin</strong>, password: <strong>2025DEVChallenge</strong>
+              </p>
+              <p>
+                Editor: username: <strong>newuser</strong>, password: <strong>2025DEVChallenge</strong>
+              </p>
+              <p>
+                Viewer: username: <strong>viewer</strong>, password: <strong>2025DEVChallenge</strong>
+              </p>
             </div>
           </CardContent>
           <CardFooter>

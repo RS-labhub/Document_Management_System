@@ -10,9 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ArrowLeft, Trash, Save, Edit } from "lucide-react"
+import { Loader2, ArrowLeft, Trash, Save, Edit, RefreshCw } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { hasPermission, RESOURCES, ACTIONS } from "@/lib/permit"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,9 +43,44 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [isPublic, setIsPublic] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
+
+  const fetchDocument = async () => {
+    if (!user) return
+
+    setLoading(true)
+    try {
+      console.log("Fetching document:", params.id)
+      const doc = await getDocument(params.id, user.id)
+      console.log("Fetched document:", doc)
+
+      if (doc) {
+        setDocument(doc)
+        setTitle(doc.title)
+        setContent(doc.content)
+        setIsPublic(doc.isPublic)
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Document not found",
+          description: "The document you're looking for doesn't exist or you don't have permission to view it",
+        })
+        router.push("/documents")
+      }
+    } catch (error) {
+      console.error("Failed to load document:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load document. Please try again later.",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!user) {
@@ -54,38 +88,8 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
       return
     }
 
-    async function loadDocument() {
-      setLoading(true)
-      try {
-        const doc = await getDocument(params.id, user.id)
-        if (doc) {
-          setDocument(doc)
-          setTitle(doc.title)
-          setContent(doc.content)
-          setIsPublic(doc.isPublic)
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Document not found",
-            description: "The document you're looking for doesn't exist or you don't have permission to view it",
-          })
-          router.push("/documents")
-        }
-      } catch (error) {
-        console.error("Failed to load document:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load document. Please try again later.",
-        })
-        router.push("/documents")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadDocument()
-  }, [user, params.id, router, toast])
+    fetchDocument()
+  }, [user, params.id])
 
   if (!user || loading) {
     return (
@@ -100,30 +104,41 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
   }
 
   const isOwner = document.ownerId === user.id
-  const canUpdate = hasPermission(user.role, ACTIONS.UPDATE, RESOURCES.DOCUMENT, {
-    id: document.id,
-    ownerId: document.ownerId,
-    userId: user.id,
-  })
-  const canDelete = hasPermission(user.role, ACTIONS.DELETE, RESOURCES.DOCUMENT, {
-    id: document.id,
-    ownerId: document.ownerId,
-    userId: user.id,
-  })
+  const isViewer = user.role === "viewer"
+  // Admin can always update, owners and editors can update their own or public documents
+  const canUpdate = (user.role === "admin" || isOwner || (user.role === "editor" && !isOwner)) && !isViewer
+  // Admin can delete any document, owners can delete their own documents
+  const canDelete = (user.role === "admin" || isOwner) && !isViewer
 
   const handleSave = async () => {
     if (!canUpdate) return
 
     setSaving(true)
     try {
-      const updatedDoc = await updateDocument(document.id, { title, content, isPublic }, user.id)
+      console.log("Saving document with:", { title, content, isPublic })
+
+      const updatedDoc = await updateDocument(
+        document.id,
+        {
+          title: title.trim(),
+          content: content.trim(),
+          isPublic,
+        },
+        user.id,
+      )
+
+      console.log("Document updated:", updatedDoc)
+
       setDocument(updatedDoc)
       setIsEditing(false)
+
       toast({
         title: "Document updated",
         description: "Your document has been updated successfully",
       })
     } catch (error) {
+      console.error("Error saving document:", error)
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -139,13 +154,21 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
 
     setDeleting(true)
     try {
-      await deleteDocument(document.id, user.id)
+      console.log(`Attempting to delete document ${document.id} by user ${user.id}`)
+
+      const result = await deleteDocument(document.id, user.id)
+      console.log("Delete result:", result)
+
       toast({
         title: "Document deleted",
         description: "Your document has been deleted successfully",
       })
-      // The redirect happens in the server action
+
+      // Manually navigate to documents page
+      router.push("/documents")
     } catch (error) {
+      console.error("Error deleting document:", error)
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -155,13 +178,30 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const handleRefresh = () => {
+    fetchDocument()
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between">
         <Button variant="ghost" size="sm" onClick={() => router.push("/documents")} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Documents
         </Button>
+
+        {!isEditing && (
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -174,7 +214,14 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
                 className="text-2xl font-bold h-auto text-xl mb-2"
               />
             ) : (
-              <CardTitle className="text-2xl">{document.title}</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-2xl">{document.title}</CardTitle>
+                {isViewer && (
+                  <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs px-2 py-1 rounded-full">
+                    View Only
+                  </span>
+                )}
+              </div>
             )}
             <CardDescription>
               {isOwner ? "You created this document" : "Shared with you"} on{" "}
@@ -189,7 +236,7 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
               </Button>
             )}
             {canDelete && (
-              <AlertDialog>
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" className="text-red-500">
                     <Trash className="h-4 w-4 mr-2" />
@@ -198,16 +245,16 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogTitle>Are you sure you want to delete this document?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the document.
+                      This action cannot be undone. This will permanently delete the document "{document.title}".
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
-                      className="bg-red-500 hover:bg-red-600"
+                      className="bg-red-500 hover:bg-red-600 text-white"
                       disabled={deleting}
                     >
                       {deleting ? (
