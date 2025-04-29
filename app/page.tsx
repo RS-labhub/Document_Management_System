@@ -18,8 +18,8 @@ export default function Home() {
             Different roles (Admin, Editor, Viewer) have different permissions on documents.
           </p>
           <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-            <li>Admins can create, view, edit, and delete any document</li>
-            <li>Editors can create, view, and edit documents</li>
+            <li>Admins can create, view, edit, and delete any document(listed public)</li>
+            <li>Editors can create, view, and edit documents (can also delete their own documents)</li>
             <li>Viewers can only view documents</li>
           </ul>
         </div>
