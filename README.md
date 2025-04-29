@@ -22,6 +22,13 @@ The application implements the following authorization model:
 
 Additionally, document owners have full control over their own documents regardless of their role.
 
+## Demo Video and Resources
+[![video](public/youtube.png)](https://youtu.be/zWEPYTF0AlQ)
+
+If you're a reader, then this blog is for you: **https://dev.to/rohan_sharma/access-control-handled-heres-how-i-built-my-dms-212**
+
+&nbsp;
+
 ## Getting Started
 
 ### Prerequisites
@@ -34,8 +41,17 @@ Additionally, document owners have full control over their own documents regardl
 1. Clone the repository
 2. Install dependencies:
    ```bash
-   npm install or yarn install or bun install
+   npm install
    ```
+   or
+   ```bash
+    yarn install
+    ```
+    or
+    ```bash
+    bun install
+    ```
+
 3. Set up environment variables:
    ```
    PERMIT_PDP_URL=your-permit-pdp-url
@@ -57,6 +73,9 @@ The application will be available at http://localhost:3000.
   - Password: 2025DEVChallenge
 - Regular User:
   - Username: newuser
+  - Password: 2025DEVChallenge
+- View:
+  - Username: viewer
   - Password: 2025DEVChallenge
 
 ## Setting Up Permit.io
@@ -237,3 +256,56 @@ const canUpdateDocument = hasPermission(
 ## Conclusion
 
 This project demonstrates how to implement fine-grained authorization in a Next.js application using Permit.io. By externalizing authorization, we can create more secure, maintainable, and flexible applications.
+
+&nbsp;
+
+## Setup and Contributing Guidelines
+    
+**Set Up Your Environment**
+
+1. `Fork` our repository to your GitHub account. 
+2. `Clone` your fork to your local machine. 
+    Use the command `git clone https://github.com/RS-labhub/Document_Management_System.git`.
+3. Create a new branch for your work. 
+    Use a descriptive name, like `fix-login-bug` or `add-user-profile-page`.
+    
+**Commit Your Changes**
+
+- Commit your changes with a _clear commit message_. 
+  e.g `git commit -m "Fix login bug by updating auth logic"`.
+
+**Submit a Pull Request**
+
+- Push your branch and changes to your fork on GitHub.
+- Create a pull request, compare branches and submit.
+- Provide a detailed description of what changes you've made and why. 
+  Link the pull request to the issue it resolves. 🔗
+    
+**Review and Merge**
+
+- I will review your pull request and provide feedback or request changes if necessary. 
+- Once your pull request is approved, we will merge it into the main codebase 🥳
+
+$~$
+
+## Meet the Author
+
+<img  src="public/author.jpg" alt="Author">
+
+
+### Contact 
+- Email: rs4101976@gmail.com
+- Head over to my github handle from [here](https://github.com/RS-labhub)
+
+&nbsp;
+
+<p align="center">
+<a href="https://twitter.com/rrs00179" target="blank"><img src="https://img.shields.io/badge/Twitter/X-000000?style=for-the-badge&logo=x&logoColor=white" alt="rrs00179" /></a>
+<a href="https://www.linkedin.com/in/rohan-sharma-9386rs/" target="blank"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="rohan-sharma=9386" /></a>
+</p>
+
+&nbsp;
+
+<p align="center">
+   Thank you for visting this Repo <br>If you like it, <a href="https://github.com/RS-labhub/Document_Management_System/stargazers">star</a> ⭐ it
+</p>
