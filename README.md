@@ -98,75 +98,7 @@ permit login
 permit init
 ```
 
-### 4. Define Your Resources
-
-```bash
-permit resource create document
-permit resource create admin_panel
-```
-
-### 5. Define Actions
-
-```bash
-permit action create create --resource document
-permit action create read --resource document
-permit action create update --resource document
-permit action create delete --resource document
-permit action create access --resource admin_panel
-```
-
-### 6. Define Roles
-
-```bash
-permit role create admin
-permit role create editor
-permit role create viewer
-```
-
-### 7. Define Permissions
-
-```bash
-# Admin permissions
-permit permission create --role admin --action create --resource document
-permit permission create --role admin --action read --resource document
-permit permission create --role admin --action update --resource document
-permit permission create --role admin --action delete --resource document
-permit permission create --role admin --action access --resource admin_panel
-
-# Editor permissions
-permit permission create --role editor --action create --resource document
-permit permission create --role editor --action read --resource document
-permit permission create --role editor --action update --resource document
-
-# Viewer permissions
-permit permission create --role viewer --action read --resource document
-```
-
-### 8. Define Resource Attributes
-
-```bash
-permit resource-attribute create ownerId --resource document --type string
-permit resource-attribute create isPublic --resource document --type boolean
-```
-
-### 9. Define Resource Relations
-
-```bash
-permit resource-relation create owner --resource document --relation-type single --subject-set user
-```
-
-### 10. Define Condition Sets
-
-```bash
-# Document owner can do anything with their document
-permit condition-set create document-owner --resource document --conditions "resource.ownerId == user.key"
-
-# Allow all actions for document owners
-permit permission create --condition-set document-owner --action create --resource document
-permit permission create --condition-set document-owner --action read --resource document
-permit permission create --condition-set document-owner --action update --resource document
-permit permission create --condition-set document-owner --action delete --resource document
-```
+&nbsp;
 
 ## Implementation Details
 
